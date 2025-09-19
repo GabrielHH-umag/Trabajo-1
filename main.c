@@ -22,5 +22,15 @@ int main(int argc, char *argv[])
         Rep_ repo;
         ugit_init(&repo, argv[2]);
     }
+    ////
+    if(strcmp(argv[1],"add") == 0)
+    {
+        Rep_ repo;
+        ugit_add(&repo, argv[2], ****);
+    }
+    if(strcmp(argv[1],"commit") == 0 && strcmp(argv[2],"-m") == 0)
+    {
+        unit_commit();
+    }
     return 0;
 }
