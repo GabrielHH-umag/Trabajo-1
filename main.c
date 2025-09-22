@@ -12,8 +12,8 @@ int main(int argc, char *argv[])
     }
     if(strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)
     {
-        printf("'init' <your_repo_name> [This command initialize your repo, and creates a directory with .ugit files]\n");
-        printf("'add' <add_your_file> [This function adds a file on the stagin area in your repo]\n");
+        ugit_say("'init' <your_repo_name> [This command initialize your repo, and creates a directory with .ugit files]\n");
+        ugit_say("'add' <add_your_file> [This function adds a file on the stagin area in your repo]\n");
         return 0;
     }
     if(strcmp(argv[1], "init") == 0)
@@ -27,6 +27,10 @@ int main(int argc, char *argv[])
         Rep_ repo;
         if(ugit_add(&repo, NULL, NULL))
             return 1;
+    }
+    if(strcmp(argv[1],"commit") == 0 && strcmp(argv[2],"-m") == 0)
+    {
+        ugit_commit("Eiyou");
     }
     return 0;
 }

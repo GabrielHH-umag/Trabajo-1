@@ -1,25 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include "estructuras.h"
 #include "Functions.h"
-void ugit_err(char* msg)
-{
-    printf("ugitError: %s", msg);
-}
-int ugit_init(Rep_* repo, char* name)
+int ugit_init(Rep_ *repo, char *name)
 {
     //Se inicializa el repositorio
-    char *command = NULL;
     repo->num_historial = 0;
     repo->num_stage = 0;
     if(name != NULL)
     {
-        /*if(name == NULL || strlen(name) == 0)
-        {
-            ugit_err("No name for the repository\nTry: 'init <your_repo_name>'\n");
-            return 1;
-        }*/
         repo->nombre = malloc(sizeof(char) * (strlen(name) + 1));
         if(repo->nombre == NULL)
         {
@@ -27,60 +18,18 @@ int ugit_init(Rep_* repo, char* name)
             return 1;
         }
         //Nombre aceptado --> Crear carpeta
-        strcpy(repo->nombre, name);
-        int cmd_size = strlen(repo->nombre) + 20;
-        command = malloc(sizeof(char) * cmd_size);
-        if(command == NULL)
-        {
-            ugit_err("Couldn't assign memory for .ugit 'create command'\n");
+        if(CreateDir(name) != 0)
             return 1;
-        }
-        strncpy(command, "mkdir ", cmd_size);
-        strncat(command, repo->nombre, cmd_size - strlen(command) - 1); // command = mkdir reponame
-        if(system(command) != 0)
-        {
-            printf("ugitError: Couldn't create repo folder named: %s\n", repo->nombre);
-            free(command);
+        if(ChangeDir(name) != 0)
             return 1;
-        }
-
-        //Crear carpeta .ugit dentro de la carpeta principal
-        int dotugit_cmd_size = strlen(repo->nombre) + 30;
-        char *dotugit_command = malloc(sizeof(char) * dotugit_cmd_size);
-        if(dotugit_command == NULL)
-        {
-            ugit_err("Couldn't assign memory for .ugit create command\n");
-            free(command);
+        if(CreateDir(".ugit") != 0)
             return 1;
-        }
-        snprintf(dotugit_command, dotugit_cmd_size, "mkdir %s/.ugit", repo->nombre);
-        if(system(dotugit_command) != 0)
-        {
-            printf("ugitError: Couldn't create .ugit folder in repo %s\n", repo->nombre);
-            free(command);
-            free(dotugit_command);
+        if(CreateDir("./.ugit/commits ./.ugit/staging") != 0)
             return 1;
-        }
-        free(dotugit_command);
-        //Cambiar directorio a la carpeta del repo
-        dotugit_command = malloc(sizeof(char) * dotugit_cmd_size);
-        if(dotugit_command == NULL)
-        {
-            ugit_err("Couldn't assign memory for .ugit create command\n");
-            free(command);
-            return 1;
-        }
-        snprintf(dotugit_command, dotugit_cmd_size, "cd %s", repo->nombre);
-        if(system(dotugit_command) != 0)
-        {
-            ugit_err("Couldn't change directory to repo folder\n");
-            free(command);
-            free(dotugit_command);
-            return 1;
-        }
-        free(dotugit_command);
-
+        ugit_say("Initialized empty uGit repository named: ");
+        printf("'%s'\n", repo->nombre);
         //Crear archivo repo_data.txt dentro de .ugit
+        /*
         char txt_path[256];
         snprintf(txt_path, sizeof(txt_path), "%s/.ugit/repo_data.txt", repo->nombre);
         FILE *txt_file = fopen(txt_path, "w");
@@ -100,18 +49,17 @@ int ugit_init(Rep_* repo, char* name)
         }
         fclose(txt_file);
         printf("Initialized empty uGit repository named: '%s'\n", repo->nombre);
+        */
     }
     else
     {
-        if(system("mkdir .ugit") != 0)
-            ugit_err("Unable to create .ugit folder in repo\n");
-        else
-            printf("Initialized empty uGit repo\n");
+        CreateDir(".ugit");
+        CreateDir("./.ugit/commits ./.ugit/staging");
+        ugit_say("Initialized empty uGit repository\n");
     }
-    free(command);
     return 0;
 }
-int ugit_add(Rep_ *repo, char* filename, char* content)
+int ugit_add(Rep_ *repo, char *filename, char *content)
 {
     if(Directory_exists(".ugit") == 0)
     {
@@ -123,7 +71,7 @@ int ugit_add(Rep_ *repo, char* filename, char* content)
 }
 int ugit_commit(const char* message)
 {
-
+    return 0;
 }
 void ugit_log()
 {
