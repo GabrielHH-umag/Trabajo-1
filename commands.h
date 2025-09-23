@@ -7,12 +7,13 @@
 #include "Functions.h"
 int Update_RepoData(Rep_ *repo)
 {
-	FILE *txt_file = fopen(".ugit/repo_data.txt", "a+");
+	FILE *txt_file = fopen(".ugit/repo_data.txt", "w");
 	if(txt_file == NULL)
 	{
 		ugit_err("Couldn't create file .ugit/repo_data.txt\n");
 		return 1;
 	}
+    fprintf(txt_file, "name: %s\n", repo->nombre);
 	fprintf(txt_file, "num_stage: %d\n", repo->num_stage);
 	fprintf(txt_file, "num_commit: %d\n", repo->num_commit);
 	fclose(txt_file);
@@ -32,13 +33,13 @@ int ugit_init(Rep_ *repo, char *name)
         }
         strcpy(repo->nombre, name);
         //Nombre aceptado --> Crear carpeta
-        if(CreateDir(name) != 0)
+        if(CreateDir(name))
             return 1;
-        if(ChangeDir(name) != 0)
+        if(ChangeDir(name))
             return 1;
-        if(CreateDir(".ugit") != 0)
+        if(CreateDir(".ugit"))
             return 1;
-        if(CreateDir("./.ugit/commits ./.ugit/staging") != 0)
+        if(CreateDir("./.ugit/commits ./.ugit/staging"))
             return 1;
         //Crear archivo repo_data.txt dentro de .ugit
         if(Update_RepoData(repo))
@@ -50,8 +51,10 @@ int ugit_init(Rep_ *repo, char *name)
     }
     else
     {
-        CreateDir(".ugit");
-        CreateDir("./.ugit/commits ./.ugit/staging");
+        if(CreateDir(".ugit"))
+            return 1;
+        if(CreateDir("./.ugit/commits ./.ugit/staging"))
+            return 1;
         if(Update_RepoData(repo))
             return 1;
         ugit_say("Initialized an empty uGit repository\n");
@@ -129,4 +132,23 @@ int ugit_commit(const char* message)
 void ugit_log()
 {
 
+}
+int LoadRepoData(Rep_ *repo)
+{
+    if(DirExists("./.ugit") == 0)
+    {
+        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
+        return 1; 
+    }
+    FILE *repodata = fopen("./.ugit/repo_data.txt", "r");
+    if(!repodata)
+    {
+        ugit_err("Unable to find repo_data.txt");
+        return 1;
+    }
+    fscanf(repodata, "name: %s\n", repo->nombre);
+    fscanf(repodata, "num_stage: %d\n", &repo->num_stage);
+	fscanf(repodata, "num_commit: %d\n", &repo->num_commit);
+    fclose(repodata);
+    return 0;
 }

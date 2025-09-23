@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     if(strcmp(argv[1], "init") == 0)
     {
         Rep_ repo;
-        if(ugit_init(&repo, argv[2]))
+        if(ugit_init(&repo, argv[2]) == 1)
             return 1;
     }
     if(strcmp(argv[1], "add") == 0)
@@ -30,7 +30,8 @@ int main(int argc, char *argv[])
             return 1;
         }
         Rep_ repo;
-        if(ugit_add(&repo, argv[2], NULL))
+        LoadRepoData(&repo);
+        if(ugit_add(&repo, argv[2], NULL) == 1)
             return 1;
     }
     if(strcmp(argv[1],"commit") == 0 && strcmp(argv[2],"-m") == 0)
