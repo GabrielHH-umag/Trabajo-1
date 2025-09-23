@@ -24,8 +24,13 @@ int main(int argc, char *argv[])
     }
     if(strcmp(argv[1], "add") == 0)
     {
+        if(argc < 3)
+        {
+            ugit_err("No file specified to add\nTry: 'add <your_file>' or 'add .' to add all files in your uGit repo\n");
+            return 1;
+        }
         Rep_ repo;
-        if(ugit_add(&repo, NULL, NULL))
+        if(ugit_add(&repo, argv[2], NULL))
             return 1;
     }
     if(strcmp(argv[1],"commit") == 0 && strcmp(argv[2],"-m") == 0)

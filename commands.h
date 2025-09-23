@@ -2,12 +2,25 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "estructuras.h"
 #include "Functions.h"
+int Update_RepoData(Rep_ *repo)
+{
+	FILE *txt_file = fopen(".ugit/repo_data.txt", "a+");
+	if(txt_file == NULL)
+	{
+		ugit_err("Couldn't create file .ugit/repo_data.txt\n");
+		return 1;
+	}
+	fprintf(txt_file, "num_stage: %d\n", repo->num_stage);
+	fprintf(txt_file, "num_commit: %d\n", repo->num_commit);
+	fclose(txt_file);
+    return 0;
+}
 int ugit_init(Rep_ *repo, char *name)
 {
-    //Se inicializa el repositorio
-    repo->num_historial = 0;
+    repo->num_commit = 0;
     repo->num_stage = 0;
     if(name != NULL)
     {
@@ -17,6 +30,7 @@ int ugit_init(Rep_ *repo, char *name)
             ugit_err("No se pudo asignar memoria\n");
             return 1;
         }
+        strcpy(repo->nombre, name);
         //Nombre aceptado --> Crear carpeta
         if(CreateDir(name) != 0)
             return 1;
@@ -26,47 +40,86 @@ int ugit_init(Rep_ *repo, char *name)
             return 1;
         if(CreateDir("./.ugit/commits ./.ugit/staging") != 0)
             return 1;
-        ugit_say("Initialized empty uGit repository named: ");
-        printf("'%s'\n", repo->nombre);
         //Crear archivo repo_data.txt dentro de .ugit
-        /*
-        char txt_path[256];
-        snprintf(txt_path, sizeof(txt_path), "%s/.ugit/repo_data.txt", repo->nombre);
-        FILE *txt_file = fopen(txt_path, "w");
-        if(txt_file == NULL)
-        {
-            ugit_err("Couldn't create repo_data.txt file\n");
-            free(command);
-            free(dotugit_command);
+        if(Update_RepoData(repo))
             return 1;
-        }
-        fprintf(txt_file, "num_stage: %d\n", repo->num_stage);
-        fprintf(txt_file, "num_commit: %d\n", repo->num_historial);
-        for(int i = 0; i < repo->num_historial; i++)
-        {
-            Commit_ *c = &repo->historial[i];
-            fprintf(txt_file, "Commit %d:\n  id: %s\n  msg: %s\n  fecha: %s\n  num_archivos: %d\n", i+1, c->id, c->msg, c->fecha, c->num_archivos);
-        }
-        fclose(txt_file);
-        printf("Initialized empty uGit repository named: '%s'\n", repo->nombre);
-        */
+        ugit_say("Initialized an empty uGit repository named: ");
+        printf("%s\n", repo->nombre);
+        printf("You can now open your repo folder with --> 'cd %s'\nand get started with your uGit repo\n", repo->nombre);
+        return 0;
     }
     else
     {
         CreateDir(".ugit");
         CreateDir("./.ugit/commits ./.ugit/staging");
-        ugit_say("Initialized empty uGit repository\n");
+        if(Update_RepoData(repo))
+            return 1;
+        ugit_say("Initialized an empty uGit repository\n");
     }
     return 0;
 }
 int ugit_add(Rep_ *repo, char *filename, char *content)
 {
-    if(Directory_exists(".ugit") == 0)
+    if(DirExists("./.ugit") == 0)
     {
-        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>'\n");
+        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
         return 1;
     }
-    printf(".ugit Already exists\n");
+
+    // Asegurar subdirectorios
+    if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
+    {
+        ugit_say("Warning: Creating missing .ugit subdirectories\n");
+        CreateDir("./.ugit/staging");
+        CreateDir("./.ugit/commits");
+    }
+
+    // Caso: agregar todos los archivos
+    if (strcmp(filename, ".") == 0)
+    {
+        ugit_say("Adding all files in the current directory to the staging area\n");
+
+        DIR *dir;
+        struct dirent *entry;
+        dir = opendir(".");
+        if (dir)
+        {
+            while ((entry = readdir(dir)) != NULL)
+            {
+                if (entry->d_type == DT_REG)
+                { // solo archivos normales
+                    if (CopyFile(entry->d_name, "./.ugit/staging/") == 0)
+                        repo->num_stage++;
+                }
+            }
+            closedir(dir);
+        }
+
+        Update_RepoData(repo);
+        ugit_say("All files added to the staging area\n");
+        return 0;
+    }
+
+    // Caso: agregar un archivo específico
+    if (filename != NULL)
+    {
+        ugit_say("Adding file to the staging area: ");
+        printf("%s\n", filename);
+
+        if (CopyFile(filename, "./.ugit/staging/") == 0)
+        {
+            repo->num_stage++;
+            Update_RepoData(repo);
+            ugit_say("File added to the staging area: ");
+            printf("%s\n", filename);
+            return 0;
+        } 
+        else
+        {
+            ugit_err("Failed to add file\n");
+            return 1;
+        }
+    }
     return 0;
 }
 int ugit_commit(const char* message)

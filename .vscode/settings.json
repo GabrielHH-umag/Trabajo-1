@@ -3,6 +3,7 @@
         "stdio.h": "c",
         "stdbool.h": "c",
         "functions.h": "c",
-        "estructuras.h": "c"
+        "estructuras.h": "c",
+        "global.h": "c"
     }
 }

@@ -20,11 +20,11 @@ typedef struct
 
 typedef struct
 {
-  char* nombre;
+  char *nombre;
   Archivo_ *stage;
   int num_stage;
-  Commit_ *historial;
-  int num_historial;
+  Commit_ *commits;
+  int num_commit;
 } Rep_;
 
 #endif
