@@ -21,10 +21,8 @@ typedef struct
 typedef struct
 {
   char *nombre;
-  Archivo_ *stage;
   int num_stage;
   Commit_ *commits;
   int num_commit;
 } Rep_;
-
 #endif

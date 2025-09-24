@@ -44,9 +44,8 @@ int ugit_init(Rep_ *repo, char *name)
         //Crear archivo repo_data.txt dentro de .ugit
         if(Update_RepoData(repo))
             return 1;
-        ugit_say("Initialized an empty uGit repository named: ");
-        printf("%s\n", repo->nombre);
-        printf("You can now open your repo folder with --> 'cd %s'\nand get started with your uGit repo\n", repo->nombre);
+        ugit_say("Initialized an empty uGit repository named: %s", repo->nombre);
+        ugit_say("You can now open your repo folder with --> 'cd %s'\nand get started with your uGit repo\n", repo->nombre);
         return 0;
     }
     else
@@ -80,8 +79,6 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
     // Caso: agregar todos los archivos
     if (strcmp(filename, ".") == 0)
     {
-        ugit_say("Adding all files in the current directory to the staging area\n");
-
         DIR *dir;
         struct dirent *entry;
         dir = opendir(".");
@@ -106,15 +103,13 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
     // Caso: agregar un archivo específico
     if (filename != NULL)
     {
-        ugit_say("Adding file to the staging area: "); 
         printf("%s\n", filename);
 
         if (CopyFile(filename, "./.ugit/staging/") == 0)
         {
             repo->num_stage++;
             Update_RepoData(repo);
-            ugit_say("File added to the staging area: ");
-            printf("%s\n", filename);
+            ugit_say("File '%s' added to the staging area\n", filename);
             return 0;
         } 
         else
@@ -125,48 +120,63 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
     }
     return 0;
 }
-int ugit_commit(const char* message)
+int ugit_commit(Rep_ *repo, const char* message)
 {
+    if(DirExists("./.ugit") == 0)
+    {
+        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
+        return 1;
+    }
+
+    // Asegurar subdirectorios
+    if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
+    {
+        ugit_err("Missing .ugit subdirectories, creating them now\n");
+        CreateDir("./.ugit/staging");
+        CreateDir("./.ugit/commits");
+        return 1;
+    }
+
+    char *buffer = malloc(sizeof(char) * strlen(message) + 21);
+    snprintf(repo->nombre, sizeof(repo->nombre), "./ugit/commits/'%s'", message);
+    if(CreateDir(buffer))
+    {
+        free(buffer);
+        return 1;
+    }
+    if(ChangeDir("./.ugit/staging"))
+    {
+        free(buffer);
+        return 1;
+    }
+    DIR *dir;
+    struct dirent *entry;
+    dir = opendir(".");
+    if(dir)
+    {
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (entry->d_type == DT_REG)
+            { // solo archivos normales
+                if (CopyFile(entry->d_name, buffer) == 0)
+                    repo->num_commit++;
+            }
+        }
+        closedir(dir);
+        Update_RepoData(repo);
+        ugit_say("All files added to commit '%s'\n", message);
+        free(buffer);
+        return 0;
+    }
+    else
+    {
+        ugit_err("Failed to open current directory\n");
+        free(buffer);
+        return 1;
+    }
     return 0;
 }
 void ugit_log()
 {
 
-}
-int LoadRepoData(Rep_ *repo)
-{
-    if(DirExists("./.ugit") == 0)
-    {
-        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
-        return 1; 
-    }
-    FILE *repodata = fopen("./.ugit/repo_data.txt", "r");
-    if(!repodata)
-    {
-        ugit_err("Unable to find repo_data.txt");
-        return 1;
-    }
-    char buffer[256];
-    if (fscanf(repodata, "name: %255s\n", buffer) == 1)
-    {
-        repo->nombre = malloc(strlen(buffer) + 1);
-        if (repo->nombre)
-            strcpy(repo->nombre, buffer);
-        else
-        {
-            ugit_err("No se pudo asignar memoria para el nombre del repo\n");
-            fclose(repodata);
-            return 1;
-        }
-    }
-    else
-    {
-        ugit_err("No se pudo leer el nombre del repo\n");
-        fclose(repodata);
-        return 1;
-    }
-    fscanf(repodata, "num_stage: %d\n", &repo->num_stage);
-	fscanf(repodata, "num_commit: %d\n", &repo->num_commit);
-    fclose(repodata);
-    return 0;
 }

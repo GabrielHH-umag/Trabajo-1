@@ -30,13 +30,22 @@ int main(int argc, char *argv[])
             return 1;
         }
         Rep_ repo;
-        LoadRepoData(&repo);
-        if(ugit_add(&repo, argv[2], NULL) == 1)
+        if(LoadRepoData(&repo))
+            return 1;
+        if(ugit_add(&repo, argv[2], NULL))
             return 1;
     }
     if(strcmp(argv[1],"commit") == 0 && strcmp(argv[2],"-m") == 0)
     {
-        ugit_commit("Eiyou");
+        Rep_ repo;
+        if(LoadRepoData(&repo))
+            return 1;
+        if(argc < 4)
+        {
+            ugit_err("No message specified for commit\nTry: 'commit -m <your_message>'\n");
+            return 1;
+        }
+        ugit_commit(&repo, argv[3]);
     }
     return 0;
 }
