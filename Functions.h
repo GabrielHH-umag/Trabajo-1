@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <openssl/sha.h>
 #include <stdarg.h>
 void ugit_err(const char *format, ...)
 {
@@ -21,6 +22,24 @@ void ugit_say(const char *format, ...)
 	printf("uGit: ");
 	vprintf(format, args);
 	va_end(args);
+}
+int hash_file_sha1(const char *filename, char *output)
+{
+    FILE *file = fopen(filename, "rb");
+    if (!file) return 1;
+    SHA_CTX ctx;
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    unsigned char buffer[4096];
+    size_t bytes;
+    SHA1_Init(&ctx);
+    while ((bytes = fread(buffer, 1, sizeof(buffer), file)) != 0)
+        SHA1_Update(&ctx, buffer, bytes);
+    SHA1_Final(hash, &ctx);
+    fclose(file);
+    for (int i = 0; i < SHA_DIGEST_LENGTH; ++i)
+        sprintf(output + (i * 2), "%02x", hash[i]);
+    output[SHA_DIGEST_LENGTH * 2] = '\0';
+    return 0;
 }
 unsigned int jenkinsHash(unsigned char *key, size_t len)
 {
@@ -121,7 +140,8 @@ int CreateFile(char *file_name) // Crea un archivo
 	int fileCount = 0;
 
 	DIR *dir = opendir(folderPath);
-	if (!dir) {
+	if (!dir) 
+	{
 		perror("No se pudo abrir la carpeta");
 		return fileCount;
 	}
