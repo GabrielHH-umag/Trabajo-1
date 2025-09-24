@@ -196,3 +196,17 @@ int LoadRepoData(Rep_ *repo)
     fclose(repodata);
     return 0;
 }
+int Update_RepoData(Rep_ *repo)
+{
+	FILE *txt_file = fopen(".ugit/repo_data.txt", "w");
+	if(txt_file == NULL)
+	{
+		ugit_err("Couldn't create file .ugit/repo_data.txt\n");
+		return 1;
+	}
+    fprintf(txt_file, "name: %s\n", repo->nombre);
+	fprintf(txt_file, "num_stage: %d\n", repo->num_stage);
+	fprintf(txt_file, "num_commit: %d\n", repo->num_commit);
+	fclose(txt_file);
+    return 0;
+}
