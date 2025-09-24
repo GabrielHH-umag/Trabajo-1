@@ -76,9 +76,11 @@ int DirExists(const char *path) // Chequea si existe un directorio
 }
 void get_date(char *buffer)
 {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	snprintf(buffer, 64, "%04d-%02d-%02d %02d:%02d:%02d",
+			 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			 tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 int CreateDir(char *folder_name) // Crea una carpeta
 {

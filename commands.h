@@ -137,21 +137,23 @@ int ugit_commit(Rep_ *repo, const char* message)
         return 1;
     }
 
-    char *buffer = malloc(sizeof(char) * strlen(message) + 21);
-    snprintf(repo->nombre, sizeof(repo->nombre), "./ugit/commits/'%s'", message);
+    size_t path_len = strlen("./.ugit/commits/") + strlen(message) + 3;
+    char *buffer = malloc(path_len);
+    if (!buffer)
+    {
+        ugit_err("Couldn't assign memory for buffer path\n");
+        return 1;
+    }
+    snprintf(buffer, path_len, "./.ugit/commits/%s", message);
     if(CreateDir(buffer))
     {
         free(buffer);
         return 1;
     }
-    if(ChangeDir("./.ugit/staging"))
-    {
-        free(buffer);
-        return 1;
-    }
+    //Flag: todo bien
     DIR *dir;
     struct dirent *entry;
-    dir = opendir(".");
+    dir = opendir("./.ugit/staging");
     if(dir)
     {
         while ((entry = readdir(dir)) != NULL)
