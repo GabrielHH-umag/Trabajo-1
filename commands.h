@@ -106,7 +106,7 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
     // Caso: agregar un archivo específico
     if (filename != NULL)
     {
-        ugit_say("Adding file to the staging area: ");
+        ugit_say("Adding file to the staging area: "); 
         printf("%s\n", filename);
 
         if (CopyFile(filename, "./.ugit/staging/") == 0)
@@ -146,7 +146,25 @@ int LoadRepoData(Rep_ *repo)
         ugit_err("Unable to find repo_data.txt");
         return 1;
     }
-    fscanf(repodata, "name: %s\n", repo->nombre);
+    char buffer[256];
+    if (fscanf(repodata, "name: %255s\n", buffer) == 1)
+    {
+        repo->nombre = malloc(strlen(buffer) + 1);
+        if (repo->nombre)
+            strcpy(repo->nombre, buffer);
+        else
+        {
+            ugit_err("No se pudo asignar memoria para el nombre del repo\n");
+            fclose(repodata);
+            return 1;
+        }
+    }
+    else
+    {
+        ugit_err("No se pudo leer el nombre del repo\n");
+        fclose(repodata);
+        return 1;
+    }
     fscanf(repodata, "num_stage: %d\n", &repo->num_stage);
 	fscanf(repodata, "num_commit: %d\n", &repo->num_commit);
     fclose(repodata);
