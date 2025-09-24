@@ -74,23 +74,53 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
             {
                 if (entry->d_type == DT_REG)
                 { 
-                    // solo archivos normales
-                    if (CopyFile(entry->d_name, "./.ugit/staging/") == 0)
-                        repo->num_stage++;
+                    /* solo archivos normales
+                     Calcular hash del archivo fuente*/
+                    char hash_src[41] = {0};
+                    if (hash_file_sha1(entry->d_name, hash_src) != 0) 
+                    {
+                        ugit_err("Failed to hash file '%s'\n", entry->d_name);
+                        continue;
+                    }
+                    char staging_path[512];
+                    snprintf(staging_path, sizeof(staging_path), "./.ugit/staging/%s", entry->d_name);
+                    // Verificar si el archivo ya existe en staging
+                    int file_exists = 0;
+                    FILE *f = fopen(staging_path, "rb");
+                    if (f) 
+                    {
+                        fclose(f);
+                        file_exists = 1;
+                        char hash_staging[41] = {0};
+                        if (hash_file_sha1(staging_path, hash_staging) == 0) {
+                            if (strcmp(hash_src, hash_staging) == 0) {
+                                ugit_say("File '%s' is unchanged, not added to staging\n", entry->d_name);
+                                continue;
+                            }
+                        }
+                    }
+                    if (CopyFile(entry->d_name, "./.ugit/staging/") == 0) 
+                    {
+                        if (!file_exists) {
+                            repo->num_stage++;
+                        }
+                        ugit_say("File '%s' added to the staging area\n", entry->d_name);
+                    } 
+                    else 
+                    {
+                        ugit_err("Failed to add file '%s'\n", entry->d_name);
+                    }
                 }
             }
             closedir(dir);
         }
-
         Update_RepoData(repo);
-        ugit_say("All files added to the staging area\n");
         return 0;
     }
     // Caso: agregar un archivo específico
     if (filename != NULL)
     {
         printf("%s\n", filename);
-
         // Calcular hash del archivo fuente
         char hash_src[41] = {0};
         if (hash_file_sha1(filename, hash_src) != 0)
@@ -98,11 +128,8 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
             ugit_err("Failed to hash file '%s'\n", filename);
             return 1;
         }
-
-        // Construir ruta al archivo en staging
         char staging_path[512];
         snprintf(staging_path, sizeof(staging_path), "./.ugit/staging/%s", filename);
-
         // Verificar si el archivo ya existe en staging
         int file_exists = 0;
         FILE *f = fopen(staging_path, "rb");
@@ -128,7 +155,8 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
             Update_RepoData(repo);
             ugit_say("File '%s' added to the staging area\n", filename);
             return 0;
-        } else 
+        } 
+        else 
         {
             ugit_err("Failed to add file\n");
             return 1;
