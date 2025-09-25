@@ -14,7 +14,7 @@ int ugit_init(Rep_ *repo, char *name)
         repo->nombre = malloc(sizeof(char) * (strlen(name) + 1));
         if(repo->nombre == NULL)
         {
-            ugit_err("No se pudo asignar memoria\n");
+            ugit_err("Couldn't assign memory for repo name\n");
             return 1;
         }
         strcpy(repo->nombre, name);
@@ -48,13 +48,13 @@ int ugit_init(Rep_ *repo, char *name)
 }
 int ugit_add(Rep_ *repo, char *filename, char *content)
 {
+    //Verifica Repo
     if(DirExists("./.ugit") == 0)
     {
         ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
         return 1;
     }
-
-    // Asegurar subdirectorios
+    //Verifica carpetas y las crea si no existen
     if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
     {
         ugit_say("Warning: Creating missing .ugit subdirectories\n");
@@ -62,14 +62,14 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
         CreateDir("./.ugit/commits");
     }
 
-    // Caso: agregar todos los archivos
+    //add . (Agregar todo a staging)
     if (strcmp(filename, ".") == 0)
     {
-        DIR *dir;
+        DIR *dir = opendir(".");
         struct dirent *entry;
-        dir = opendir(".");
         if (dir)
         {
+            //Recorre hasta el ultimo archivo en '.'
             while ((entry = readdir(dir)) != NULL)
             {
                 if (entry->d_type == DT_REG)
@@ -86,29 +86,31 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
                     snprintf(staging_path, sizeof(staging_path), "./.ugit/staging/%s", entry->d_name);
                     // Verificar si el archivo ya existe en staging
                     int file_exists = 0;
-                    FILE *f = fopen(staging_path, "rb");
-                    if (f) 
+                    if (FileExists(staging_path)) 
                     {
-                        fclose(f);
                         file_exists = 1;
                         char hash_staging[41] = {0};
-                        if (hash_file_sha1(staging_path, hash_staging) == 0) {
-                            if (strcmp(hash_src, hash_staging) == 0) {
+                        if (hash_file_sha1(staging_path, hash_staging) == 0)
+                        {
+                            if (strcmp(hash_src, hash_staging) == 0)
+                            {
                                 ugit_say("File '%s' is unchanged, not added to staging\n", entry->d_name);
                                 continue;
                             }
                         }
                     }
+                    //Copia el archivo en entrada a staging
                     if (CopyFile(entry->d_name, "./.ugit/staging/") == 0) 
                     {
-                        if (!file_exists) {
+                        if (!file_exists)
                             repo->num_stage++;
-                        }
                         ugit_say("File '%s' added to the staging area\n", entry->d_name);
                     } 
-                    else 
+                    else
                     {
                         ugit_err("Failed to add file '%s'\n", entry->d_name);
+                        closedir(dir);
+                        return 1;
                     }
                 }
             }
@@ -117,10 +119,9 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
         Update_RepoData(repo);
         return 0;
     }
-    // Caso: agregar un archivo específico
+    //add <archivo> (Agregar archivo especifico a staging)
     if (filename != NULL)
     {
-        printf("%s\n", filename);
         // Calcular hash del archivo fuente
         char hash_src[41] = {0};
         if (hash_file_sha1(filename, hash_src) != 0)
@@ -132,10 +133,8 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
         snprintf(staging_path, sizeof(staging_path), "./.ugit/staging/%s", filename);
         // Verificar si el archivo ya existe en staging
         int file_exists = 0;
-        FILE *f = fopen(staging_path, "rb");
-        if (f) 
+        if (FileExists(staging_path)) 
         {
-            fclose(f);
             file_exists = 1;
             // Calcular hash del archivo en staging
             char hash_staging[41] = {0};
@@ -148,7 +147,8 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
                 }
             }
         }
-        if (CopyFile(filename, "./.ugit/staging/") == 0) 
+        //Copia el archivo
+        if (CopyFile(filename, "./.ugit/staging/") == 0)  
         {
             if (!file_exists) 
                 repo->num_stage++;
@@ -203,9 +203,8 @@ int ugit_commit(Rep_ *repo, const char* message)
     }
     
     //Flag: todo bien
-    DIR *dir;
+    DIR *dir = opendir("./.ugit/staging");
     struct dirent *entry;
-    dir = opendir("./.ugit/staging");
     if(dir)
     {
         while ((entry = readdir(dir)) != NULL)

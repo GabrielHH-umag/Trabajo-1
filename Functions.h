@@ -26,7 +26,8 @@ void ugit_say(const char *format, ...)
 int hash_file_sha1(const char *filename, char *output)
 {
     FILE *file = fopen(filename, "rb");
-    if (!file) return 1;
+    if (!file)
+		return 1;
     SHA_CTX ctx;
     unsigned char hash[SHA_DIGEST_LENGTH];
     unsigned char buffer[4096];
@@ -92,6 +93,13 @@ int DirExists(const char *path) // Chequea si existe un directorio
     if (S_ISDIR(stats.st_mode))
         return 1;
     return 0;
+}
+int FileExists(const char *path) // Chequea si existe un archivo
+{
+	FILE *file = fopen(path, "r");
+	if (file)
+		return 1;
+	return 0;
 }
 void get_date(char *buffer)
 {
