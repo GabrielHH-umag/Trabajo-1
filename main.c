@@ -52,5 +52,10 @@ int main(int argc, char *argv[])
         Rep_ repo;
         ugit_log(&repo);
     }
+    if(strcmp(argv[1]), "checkout" == 0)
+    {
+        Rep_ repo;
+        ugit_checkout(&repo,argv[2]);
+    }
     return 0;
 }
