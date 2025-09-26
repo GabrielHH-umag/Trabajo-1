@@ -25,20 +25,24 @@ int ugit_init(Rep_ *repo, char *name)
             return 1;
         if(CreateDir(".ugit"))
             return 1;
-        if(CreateDir("./.ugit/commits ./.ugit/staging"))
+        if(CreateDir("./.ugit/commits"))
+            return 1;
+        if(CreateDir("./.ugit/staging"))
             return 1;
         //Crear archivo repo_data.txt dentro de .ugit
         if(Update_RepoData(repo))
             return 1;
-        ugit_say("Initialized an empty uGit repository named: %s", repo->nombre);
-        ugit_say("You can now open your repo folder with --> 'cd %s'\nand get started with your uGit repo\n", repo->nombre);
+        ugit_say("Initialized an empty uGit repository named: %s\n", repo->nombre);
+        ugit_say("You can now open your repo folder with --> 'cd %s' and get started with your uGit repo\n", repo->nombre);
         return 0;
     }
     else
     {
         if(CreateDir(".ugit"))
             return 1;
-        if(CreateDir("./.ugit/commits ./.ugit/staging"))
+        if(CreateDir("./.ugit/commits"))
+            return 1;
+        if(CreateDir("./.ugit/staging"))
             return 1;
         if(Update_RepoData(repo))
             return 1;

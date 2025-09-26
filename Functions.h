@@ -120,7 +120,7 @@ int CreateDir(char *folder_name) // Crea una carpeta
 {
 	size_t cmd_size = strlen(folder_name) + 20;
 	char *cmd = malloc(sizeof(char) * cmd_size);
-	snprintf(cmd, cmd_size, "mkdir %s", folder_name);
+	snprintf(cmd, cmd_size, "mkdir \"%s\"", folder_name);
 	if(system(cmd) != 0)
 	{
 		ugit_err("Couldn't create folder '%s'\n", folder_name);
@@ -184,7 +184,7 @@ int CopyFile(const char *sourcePath, const char *destPath) // Copia un archivo
 {
 	size_t cmd_size = strlen(sourcePath) + strlen(destPath) + 20;
 	char *cmd = malloc(sizeof(char) * cmd_size);
-	snprintf(cmd, cmd_size, "cp %s %s", sourcePath, destPath);
+	snprintf(cmd, cmd_size, "cp \"%s\" \"%s\"", sourcePath, destPath);
 	if(system(cmd) != 0)
 	{
 		ugit_err("Couldn't copy or find file from '%s' to '%s'\n", sourcePath, destPath);
@@ -208,7 +208,7 @@ int LoadRepoData(Rep_ *repo)
         return 1;
     }
     char buffer[256];
-    if (fscanf(repodata, "name: %255s\n", buffer) == 1)
+    if (fscanf(repodata, "name: %[^\n]\n", buffer) == 1)
     {
         repo->nombre = malloc(strlen(buffer) + 1);
         if (repo->nombre)
