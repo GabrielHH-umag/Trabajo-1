@@ -42,6 +42,14 @@ int hash_file_sha1(const char *filename, char *output)
     output[SHA_DIGEST_LENGTH * 2] = '\0';
     return 0;
 }
+void generate_commit_id(const char *input, char *output)
+{
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    SHA1((const unsigned char *)input, strlen(input), hash);
+    for (int i = 0; i < SHA_DIGEST_LENGTH; ++i)
+        sprintf(output + (i * 2), "%02x", hash[i]);
+    output[SHA_DIGEST_LENGTH * 2] = '\0';
+}
 unsigned int jenkinsHash(unsigned char *key, size_t len)
 {
 	unsigned int hash = 0; 
@@ -59,14 +67,14 @@ unsigned int jenkinsHash(unsigned char *key, size_t len)
 // Funcion para leer el contenido de un archivo y calcular el hash
 unsigned int hashFile(char *filename) 
 { 
-	FILE *file = fopen(filename, "rb"); // Abrir el archivo en modo binario 
+	FILE *file = fopen(filename, "rb"); 
 	if (!file) 
 	{ 
 		printf("No se puede abrir el archivo '%s'\n", filename);
 		perror("ERROR");
 		exit(EXIT_FAILURE);
 	} 
-	// Determinar el tamanho del archivo 
+	// Determinar el size del archivo 
 	fseek(file, 0, SEEK_END); 
 	long fileSize = ftell(file); 
 	fseek(file, 0, SEEK_SET); 
@@ -80,9 +88,7 @@ unsigned int hashFile(char *filename)
 	} 
 	fread(buffer, sizeof(unsigned char), fileSize, file); 
 	fclose(file); 
-	// Calcular el hash del contenido 
 	unsigned int hash = jenkinsHash(buffer, fileSize); 
-	// Liberar la memoria del buffer 
 	free(buffer); 
 	return hash; 
 }
@@ -101,11 +107,12 @@ int FileExists(const char *path) // Chequea si existe un archivo
 		return 1;
 	return 0;
 }
-void get_date(char *buffer)
+void get_date(char *buffer, size_t size)
 {
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-	snprintf(buffer, 64, "%04d-%02d-%02d %02d:%02d:%02d",
+	
+	snprintf(buffer, size, "%04d-%02d-%02d %02d:%02d:%02d",
 			 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 			 tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
@@ -238,11 +245,11 @@ int Update_RepoData(Rep_ *repo)
 	fclose(txt_file);
     return 0;
 }
-void GetUser(Rep_ *repo)
+void get_user(char *buffer, size_t size)
 {
     char *user = getenv("USER");
     if (user)
-		repo->commits[repo->num_commit].autor = user;
+		strncpy(buffer, user, size);
     else
-		repo->commits[repo->num_commit].autor = "Unknown";
+		strncpy(buffer, "Unknown", size);
 }

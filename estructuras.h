@@ -11,9 +11,9 @@ typedef struct
 
 typedef struct
 {
-  char id[10];
-  char msg[200];
-  char fecha[50];
+  char id[41];
+  char *msg;
+  char *fecha;
   char *autor;
   Archivo_ *archivo;
   int num_archivos;

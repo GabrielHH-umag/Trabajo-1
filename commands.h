@@ -203,24 +203,59 @@ int ugit_commit(Rep_ *repo, const char* message)
         free(buffer);
         return 1;
     }
-    
     //Flag: todo bien
+    repo->commits = realloc(repo->commits, sizeof(Commit_) * (repo->num_commit + 1));
     DIR *dir = opendir("./.ugit/staging");
     struct dirent *entry;
+    repo->commits[repo->num_commit].msg = strdup(message);
+    char fecha[64];
+    get_date(fecha, sizeof(fecha));
+    repo->commits[repo->num_commit].fecha = strdup(fecha);
+    char autor[128];
+    get_user(autor, sizeof(autor));
+    repo->commits[repo->num_commit].autor = strdup(autor);
+    Archivo_ *archs = malloc(sizeof(Archivo_) * 100); // Ajusta el tamaño según necesidad
+    char tree[1024] = "";
+    int count = 0;
     if(dir)
     {
         while ((entry = readdir(dir)) != NULL)
         {
             if (entry->d_type == DT_REG)
-            { // solo archivos normales
-                if (CopyFile(entry->d_name, buffer) == 0)
-                    repo->num_commit++;
+            {
+                archs[count].nombre = strdup(entry->d_name);
+                strcat(tree, entry->d_name);
+                strcat(tree, " ");
+                CopyFile(entry->d_name, buffer);
+                count++;
             }
         }
         closedir(dir);
+        repo->commits[repo->num_commit].archivo = archs;
+        repo->commits[repo->num_commit].num_archivos = count;
+        char data[2048];
+        snprintf(data, sizeof(data), "tree: %s\nauthor: %s\ndate: %s\nmessage: %s\n", tree, repo->commits[repo->num_commit].autor, repo->commits[repo->num_commit].fecha, repo->commits[repo->num_commit].msg);
+        char commit_id[41];
+        generate_commit_id(data, commit_id);
+        strncpy(repo->commits[repo->num_commit].id, commit_id, sizeof(repo->commits[repo->num_commit].id));
+        char commit_data[512];
+        snprintf(commit_data, sizeof(commit_data), "%s/commit_data.txt", buffer);
+        FILE *f = fopen(commit_data, "w");
+        if (f) 
+        {
+            fprintf(f, "id: %s\nauthor: %s\ndate: %s\nmessage: %s\n", repo->commits[repo->num_commit].id, repo->commits[repo->num_commit].autor, repo->commits[repo->num_commit].fecha, repo->commits[repo->num_commit].msg);
+            fclose(f);
+        }
+        else 
+        {
+            ugit_err("Couldn't create commit_data.txt file\n");
+        }
         Update_RepoData(repo);
         ugit_say("All files added to commit '%s'\n", message);
+        free(archs);
         free(buffer);
+        repo->num_commit++;
+        Update_RepoData(repo);
         return 0;
     }
     else
