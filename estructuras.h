@@ -14,6 +14,7 @@ typedef struct
   char id[10];
   char msg[200];
   char fecha[50];
+  char *autor;
   Archivo_ *archivo;
   int num_archivos;
 } Commit_;

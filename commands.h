@@ -48,6 +48,8 @@ int ugit_init(Rep_ *repo, char *name)
 }
 int ugit_add(Rep_ *repo, char *filename, char *content)
 {
+    //Carga los datos
+    LoadRepoData(repo);
     //Verifica Repo
     if(DirExists("./.ugit") == 0)
     {
@@ -229,7 +231,14 @@ int ugit_commit(Rep_ *repo, const char* message)
     }
     return 0;
 }
-void ugit_log()
+void ugit_log(Rep_ *repo)
 {
-
+    LoadRepoData(repo);
+    for(int i = 0; i < repo->num_commit; i++)
+    {
+        printf("Author: %s\n", repo->commits[i].autor);
+        printf("Date: %s\n", repo->commits[i].fecha);
+        printf("\t%s\n", repo->commits[i].msg);
+    }
+    //GetUser(&repo);
 }

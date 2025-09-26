@@ -197,7 +197,7 @@ int LoadRepoData(Rep_ *repo)
     FILE *repodata = fopen("./.ugit/repo_data.txt", "r");
     if(!repodata)
     {
-        ugit_err("Unable to find repo_data.txt");
+        ugit_err("Unable to find repo_data.txt\n");
         return 1;
     }
     char buffer[256];
@@ -237,4 +237,12 @@ int Update_RepoData(Rep_ *repo)
 	fprintf(txt_file, "num_commit: %d\n", repo->num_commit);
 	fclose(txt_file);
     return 0;
+}
+void GetUser(Rep_ *repo)
+{
+    char *user = getenv("USER");
+    if (user)
+		repo->commits[repo->num_commit].autor = user;
+    else
+		repo->commits[repo->num_commit].autor = "Unknown";
 }
