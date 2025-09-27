@@ -54,12 +54,6 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
 {
     //Carga los datos
     LoadRepoData(repo);
-    //Verifica Repo
-    if(DirExists("./.ugit") == 0)
-    {
-        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
-        return 1;
-    }
     //Verifica carpetas y las crea si no existen
     if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
     {
@@ -172,12 +166,8 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
 }
 int ugit_commit(Rep_ *repo, const char* message)
 {
-    LoadRepoData(repo);
-    if(DirExists("./.ugit") == 0)
-    {
-        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
+    if(LoadRepoData(repo))
         return 1;
-    }
 
     // Asegurar subdirectorios
     if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
@@ -201,7 +191,7 @@ int ugit_commit(Rep_ *repo, const char* message)
         free(buffer);
         return 1;
     }
-    snprintf(buffer, path_len, "./.ugit/commits/%s", message);
+    snprintf(buffer, path_len, "./.ugit/commits/commit_%d", repo->num_commit + 1); //<----
     if(CreateDir(buffer))
     {
         free(buffer);
@@ -251,10 +241,7 @@ int ugit_commit(Rep_ *repo, const char* message)
             fclose(f);
         }
         else 
-        {
             ugit_err("Couldn't create commit_data.txt file\n");
-        }
-        Update_RepoData(repo);
         ugit_say("All files added to commit '%s'\n", message);
         free(archs);
         free(buffer);
@@ -270,14 +257,24 @@ int ugit_commit(Rep_ *repo, const char* message)
     }
     return 0;
 }
-void ugit_log(Rep_ *repo)
+int ugit_log(Rep_ *repo)
 {
-    LoadRepoData(repo);
+    if(LoadRepoData(repo))
+        return 1;
+    if(LoadCommitsData(repo))
+        return 1;
     for(int i = 0; i < repo->num_commit; i++)
     {
         printf("Author: %s\n", repo->commits[i].autor);
         printf("Date: %s\n", repo->commits[i].fecha);
-        printf("\t%s\n", repo->commits[i].msg);
+        printf("\t%s\n\n", repo->commits[i].msg);
     }
     //GetUser(&repo);
+    return 0;
+}
+
+int ugit_checkout(Rep_ *repo, char *id)
+{
+    printf("Falta construir ;(\nVuelva pronto, trabajando con usted...\nMe quiero ir a dormir\nPara siempre...\n");
+    ugit_say("uGit Dice: Chao cabros %d\n", sizeof(int));
 }

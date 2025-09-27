@@ -50,12 +50,14 @@ int main(int argc, char *argv[])
     if(strcmp(argv[1], "log") == 0)
     {
         Rep_ repo;
-        ugit_log(&repo);
+        if(ugit_log(&repo))
+            return 1;
     }
-    if(strcmp(argv[1]), "checkout" == 0)
+    if(strcmp(argv[1], "checkout") == 0)
     {
         Rep_ repo;
-        ugit_checkout(&repo,argv[2]);
+        if(ugit_checkout(&repo, argv[2]))
+            return 1;
     }
     return 0;
 }

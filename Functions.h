@@ -253,3 +253,100 @@ void get_user(char *buffer, size_t size)
     else
 		strncpy(buffer, "Unknown", size);
 }
+int LoadCommitsData(Rep_ *repo)
+{
+	/*PROBLEMA:
+	Cambiar el nombre a las carpetas Commits
+	Seria mas eficiente llamar a las carpetas con el nombre "commit_1, commit_2"
+	asi sabremos el nombre del directorio y podremos abrirlo para leer la informacion
+	*/ //Solucionado(?
+	if(DirExists("./.ugit") == 0)
+    {
+        ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
+        return 1; 
+    }
+	repo->commits = malloc(sizeof(Commit_) * (repo->num_commit + 1));
+	for(int i = 0; i < repo->num_commit; i++)
+	{
+		char buffer[64];
+		snprintf(buffer, sizeof(buffer), "./.ugit/commits/commit_%d/commit_data.txt", i + 1);
+		FILE *CommitData = fopen(buffer, "r");
+		if(!CommitData)
+		{
+			ugit_err("Couldn't open commit_data.txt in commit directory: '%s'\n", buffer);
+			free(repo->commits);
+			return 1;
+		}
+		fscanf(CommitData, "id: %40s\n", repo->commits[i].id);
+		char author_buffer[256];
+		fscanf(CommitData, "author: %[^\n]\n", author_buffer);
+		repo->commits[i].autor = malloc(strlen(author_buffer) + 1);
+		if(repo->commits[i].autor)
+			strcpy(repo->commits[i].autor, author_buffer);
+		else
+		{
+			ugit_err("Couldn't assign memory for author buffer\n");
+			free(repo->commits);
+			fclose(CommitData);
+			return 1;
+		}
+		char date_buffer[64];
+		fscanf(CommitData, "date: %[^\n]\n", date_buffer);
+		repo->commits[i].fecha = malloc(strlen(date_buffer) + 1);
+		if(repo->commits[i].fecha)
+			strcpy(repo->commits[i].fecha, date_buffer);
+		else
+		{
+			ugit_err("Couldn't assign memory for date buffer\n");
+			free(repo->commits);
+			fclose(CommitData);
+			return 1;
+		}
+		char message_buffer[512];
+		fscanf(CommitData, "message: %[^\n]\n", message_buffer);
+		repo->commits[i].msg = malloc(strlen(message_buffer) + 1);
+		if(repo->commits[i].msg)
+			strcpy(repo->commits[i].msg, message_buffer);
+		else
+		{
+			ugit_err("Couldn't assign memory for message buffer\n");
+			free(repo->commits);
+			fclose(CommitData);
+			return 1;
+		}
+		fclose(CommitData);
+		/*
+		DIR *dir = opendir(buffer);
+        struct dirent *entry;
+        if (dir)
+        {
+            //Recorre hasta el ultimo archivo en '.'
+            while ((entry = readdir(dir)) != NULL)
+			{
+				FILE *CommitData = fopen("commit_data.txt", "r");
+				fscanf(CommitData, "id: %40s\n", repo->commits[i].id);
+				fscanf(CommitData, "author: %s\n", repo->commits[i].autor);
+				fscanf(CommitData, "date: %s\n", repo->commits[i].fecha);
+				fscanf(CommitData, "message: %s\n", repo->commits[i].msg);
+			}
+		}*/
+	}
+	return 0;
+}
+
+//Ejemplo
+/*
+Commits
+|________"Commit 1: Wea reculia"
+|		  |______commit_data.txt
+|		  |______file1.txt
+|		  |______file2.txt
+|
+|________"Commit 2: Wea reculia recontra culia 2"
+		  |______commit_data.txt
+		  |______file1.txt
+		  |______file2.txt
+		  |______file3.txt
+
+
+*/
