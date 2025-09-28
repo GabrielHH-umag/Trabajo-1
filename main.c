@@ -56,6 +56,11 @@ int main(int argc, char *argv[])
     if(strcmp(argv[1], "checkout") == 0)
     {
         Rep_ repo;
+        if(argc < 3)
+        {
+            ugit_err("No commit specified to checkout\nTry: 'checkout <commit_id>', can be an aproximation of the id\n");
+            return 1;
+        }
         if(ugit_checkout(&repo, argv[2]))
             return 1;
     }

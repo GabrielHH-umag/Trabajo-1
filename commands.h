@@ -265,9 +265,11 @@ int ugit_log(Rep_ *repo)
         return 1;
     for(int i = 0; i < repo->num_commit; i++)
     {
+        printf("Commit %d\n", i + 1);
+        printf("ID: %s\n", repo->commits[i].id);
         printf("Author: %s\n", repo->commits[i].autor);
         printf("Date: %s\n", repo->commits[i].fecha);
-        printf("\t%s\n\n", repo->commits[i].msg);
+        printf("message: %s\n\n", repo->commits[i].msg);
     }
     //GetUser(&repo);
     return 0;
@@ -275,6 +277,73 @@ int ugit_log(Rep_ *repo)
 
 int ugit_checkout(Rep_ *repo, char *id)
 {
-    printf("Falta construir ;(\nVuelva pronto, trabajando con usted...\nMe quiero ir a dormir\nPara siempre...\n");
-    ugit_say("uGit Dice: Chao cabros %d\n", sizeof(int));
+    if (LoadRepoData(repo))
+        return 1;
+    if (LoadCommitsData(repo))
+        return 1;
+    int found = -1;
+    int prefix_len = strlen(id);
+    for (int i = 0; i < repo->num_commit; i++) 
+    {
+        if (strncmp(repo->commits[i].id, id, prefix_len) == 0) 
+        {
+            if (found != -1) 
+            {
+                ugit_err("Hash prefix is not unique\n");
+                return 1;
+            }
+            found = i;
+        }
+    }
+    if (found == -1) 
+    {
+        ugit_err("Hash prefix doesn't correspond to any commit\n");
+        return 1;
+    }
+    char commit_dir[256];
+    snprintf(commit_dir, sizeof(commit_dir), "./.ugit/commits/commit_%d", found + 1);
+    DIR *dir = opendir(commit_dir);
+    if (!dir) 
+    {
+        ugit_err("Failed to open commit directory\n");
+        return 1;
+    }
+    struct dirent *entry;
+    int restored = 0;
+    while ((entry = readdir(dir)) != NULL) 
+    {
+        if (entry->d_type != DT_REG || strcmp(entry->d_name, "commit_data.txt") == 0)
+            continue;
+        char src[512], dst[512];
+        snprintf(src, sizeof(src), "%s/%s", commit_dir, entry->d_name);
+        snprintf(dst, sizeof(dst), "./%s", entry->d_name);
+        // Restaurar solo si el archivo es distinto
+        char hash_src[41] = {0};
+        char hash_dst[41] = {0};
+        int src_ok = hash_file_sha1(src, hash_src);
+        int dst_ok = hash_file_sha1(dst, hash_dst);
+        if (src_ok != 0 || (dst_ok == 0 && strcmp(hash_src, hash_dst) == 0)) 
+        {
+            continue;
+        }
+        if (CopyFile(src, dst) == 0) 
+        {
+            ugit_say("File restored %s\n", entry->d_name);
+            restored++;
+        } 
+        else 
+        {
+            ugit_err("Failed to restore file: %s\n", entry->d_name);
+        }
+    }
+    closedir(dir);
+    if (restored == 0) 
+    {
+        ugit_say("Couldn't restore any files/Files where unchanged\n");
+    } 
+    else 
+    {
+    ugit_say("Switched to Commit %d\nID: %s\nFiles restored: %d\n", found + 1, repo->commits[found].id, restored);
+    }
+    return 0;
 }

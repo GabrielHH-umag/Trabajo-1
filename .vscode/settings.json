@@ -4,6 +4,7 @@
         "stdbool.h": "c",
         "functions.h": "c",
         "estructuras.h": "c",
-        "global.h": "c"
+        "global.h": "c",
+        "unistd.h": "c"
     }
 }
