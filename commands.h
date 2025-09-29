@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include "estructuras.h"
 #include "Functions.h"
+
 int ugit_init(Rep_ *repo, char *name)
 {
     repo->num_commit = 0;
@@ -30,7 +31,7 @@ int ugit_init(Rep_ *repo, char *name)
         if(CreateDir("./.ugit/staging"))
             return 1;
         //Crear archivo repo_data.txt dentro de .ugit
-        if(Update_RepoData(repo))
+        if(UpdateRepoData(repo))
             return 1;
         ugit_say("Initialized an empty uGit repository named: %s\n", repo->nombre);
         ugit_say("You can now open your repo folder with --> 'cd %s' and get started with your uGit repo\n", repo->nombre);
@@ -44,7 +45,7 @@ int ugit_init(Rep_ *repo, char *name)
             return 1;
         if(CreateDir("./.ugit/staging"))
             return 1;
-        if(Update_RepoData(repo))
+        if(UpdateRepoData(repo))
             return 1;
         ugit_say("Initialized an empty uGit repository\n");
     }
@@ -109,7 +110,7 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
             }
             closedir(dir);
         }
-        Update_RepoData(repo);
+        UpdateRepoData(repo);
         return 0;
     }
     //add <archivo> (Agregar archivo especifico a staging)
@@ -145,7 +146,7 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
         {
             if (!file_exists) 
                 repo->num_stage++;
-            Update_RepoData(repo);
+            UpdateRepoData(repo);
             ugit_say("File '%s' added to the staging area\n", filename);
             return 0;
         } 
@@ -241,7 +242,7 @@ int ugit_commit(Rep_ *repo, const char* message)
         free(buffer);
         repo->num_commit++;
         repo->header_commit++;
-        Update_RepoData(repo);
+        UpdateRepoData(repo);
         return 0;
     }
     else
@@ -334,6 +335,6 @@ int ugit_checkout(Rep_ *repo, char *id)
     else
         ugit_say("Switched to Commit %d\nID: %.6s\nFiles restored: %d\n", found + 1, repo->commits[found].id, restored);
     repo->header_commit = found + 1;
-    Update_RepoData(repo);
+    UpdateRepoData(repo);
     return 0;
 }

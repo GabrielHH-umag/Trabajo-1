@@ -3,6 +3,7 @@
 #include <string.h>
 #ifndef ESTRUCTURAS_H
 #define ESTRUCTURAS_H
+
 typedef struct
 {
   char *nombre;
