@@ -54,13 +54,6 @@ int ugit_add(Rep_ *repo, char *filename, char *content)
 {
     //Carga los datos
     LoadRepoData(repo);
-    //Verifica carpetas y las crea si no existen
-    if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
-    {
-        ugit_say("Warning: Creating missing .ugit subdirectories\n");
-        CreateDir("./.ugit/staging");
-        CreateDir("./.ugit/commits");
-    }
 
     //add . (Agregar todo a staging)
     if (strcmp(filename, ".") == 0)
@@ -168,7 +161,7 @@ int ugit_commit(Rep_ *repo, const char* message)
 {
     if(LoadRepoData(repo))
         return 1;
-
+    
     // Asegurar subdirectorios
     if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
     {
@@ -178,7 +171,7 @@ int ugit_commit(Rep_ *repo, const char* message)
         return 1;
     }
     
-    size_t path_len = strlen("./.ugit/commits/") + strlen(message) + 3;
+    size_t path_len = (size_t)snprintf(NULL, 0, "./.ugit/commits/commit_%d", repo->num_commit + 1) + 1;
     char *buffer = malloc(path_len);
     if (!buffer)
     {
@@ -192,6 +185,7 @@ int ugit_commit(Rep_ *repo, const char* message)
         return 1;
     }
     snprintf(buffer, path_len, "./.ugit/commits/commit_%d", repo->num_commit + 1); //<----
+    printf("path of the commit: %s\n", buffer);
     if(CreateDir(buffer))
     {
         free(buffer);
@@ -246,6 +240,7 @@ int ugit_commit(Rep_ *repo, const char* message)
         free(archs);
         free(buffer);
         repo->num_commit++;
+        repo->header_commit++;
         Update_RepoData(repo);
         return 0;
     }
@@ -263,24 +258,25 @@ int ugit_log(Rep_ *repo)
         return 1;
     if(LoadCommitsData(repo))
         return 1;
+    
     for(int i = 0; i < repo->num_commit; i++)
     {
-        printf("Commit %d\n", i + 1);
-        printf("ID: %s\n", repo->commits[i].id);
+        if(i + 1 == repo->header_commit)
+            printf("Commit %d ( HEAD -> master )\n", i + 1);
+        else
+            printf("Commit %d\n", i + 1);
+        printf("ID: %.6s\n", repo->commits[i].id);
         printf("Author: %s\n", repo->commits[i].autor);
         printf("Date: %s\n", repo->commits[i].fecha);
         printf("message: %s\n\n", repo->commits[i].msg);
     }
-    //GetUser(&repo);
     return 0;
 }
-
 int ugit_checkout(Rep_ *repo, char *id)
 {
-    if (LoadRepoData(repo))
+    if (LoadRepoData(repo) || LoadCommitsData(repo))
         return 1;
-    if (LoadCommitsData(repo))
-        return 1;
+    
     int found = -1;
     int prefix_len = strlen(id);
     for (int i = 0; i < repo->num_commit; i++) 
@@ -323,27 +319,21 @@ int ugit_checkout(Rep_ *repo, char *id)
         int src_ok = hash_file_sha1(src, hash_src);
         int dst_ok = hash_file_sha1(dst, hash_dst);
         if (src_ok != 0 || (dst_ok == 0 && strcmp(hash_src, hash_dst) == 0)) 
-        {
             continue;
-        }
         if (CopyFile(src, dst) == 0) 
         {
             ugit_say("File restored %s\n", entry->d_name);
             restored++;
         } 
         else 
-        {
             ugit_err("Failed to restore file: %s\n", entry->d_name);
-        }
     }
     closedir(dir);
-    if (restored == 0) 
-    {
+    if (restored == 0)
         ugit_say("Couldn't restore any files/Files where unchanged\n");
-    } 
-    else 
-    {
-    ugit_say("Switched to Commit %d\nID: %s\nFiles restored: %d\n", found + 1, repo->commits[found].id, restored);
-    }
+    else
+        ugit_say("Switched to Commit %d\nID: %.6s\nFiles restored: %d\n", found + 1, repo->commits[found].id, restored);
+    repo->header_commit = found + 1;
+    Update_RepoData(repo);
     return 0;
 }

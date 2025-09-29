@@ -51,48 +51,6 @@ void generate_commit_id(const char *input, char *output)
         sprintf(output + (i * 2), "%02x", hash[i]);
     output[SHA_DIGEST_LENGTH * 2] = '\0';
 }
-unsigned int jenkinsHash(unsigned char *key, size_t len)
-{
-	unsigned int hash = 0; 
-	for (size_t i = 0; i < len; i++) 
-	{ 
-		hash += key[i]; 
-		hash += (hash << 10); 
-		hash ^= (hash >> 6); 
-	} 
-	hash += (hash << 3); 
-	hash ^= (hash >> 11); 
-	hash += (hash << 15); 
-	return hash; 
-} 
-// Funcion para leer el contenido de un archivo y calcular el hash
-unsigned int hashFile(char *filename) 
-{ 
-	FILE *file = fopen(filename, "rb"); 
-	if (!file) 
-	{ 
-		printf("No se puede abrir el archivo '%s'\n", filename);
-		perror("ERROR");
-		exit(EXIT_FAILURE);
-	} 
-	// Determinar el size del archivo 
-	fseek(file, 0, SEEK_END); 
-	long fileSize = ftell(file); 
-	fseek(file, 0, SEEK_SET); 
-	// Leer el contenido del archivo 
-	unsigned char *buffer = (unsigned char *)malloc(fileSize * sizeof(unsigned char)); 
-	if (!buffer) 
-	{ 
-		perror("No se puede asignar memoria"); 
-		fclose(file); 
-		exit(EXIT_FAILURE); 
-	} 
-	fread(buffer, sizeof(unsigned char), fileSize, file); 
-	fclose(file); 
-	unsigned int hash = jenkinsHash(buffer, fileSize); 
-	free(buffer); 
-	return hash; 
-}
 int DirExists(const char *path) // Chequea si existe un directorio
 {
     struct stat stats;
@@ -151,36 +109,6 @@ int CreateFile(char *file_name) // Crea un archivo
 	fclose(file);
 	return 0;
 }
-/*int ScanFolder(const char *folderPath)
-{
-	int fileCount = 0;
-
-	DIR *dir = opendir(folderPath);
-	if (!dir) 
-	{
-		perror("No se pudo abrir la carpeta");
-		return fileCount;
-	}
-
-	struct dirent *entry;
-
-	while ((entry = readdir(dir)) != NULL)
-	{
-		#ifdef _DIRENT_HAVE_D_TYPE
-				if (entry->d_type == DT_REG) // Solo archivos normales
-		#else
-				struct stat path_stat;
-				stat(entry->d_name, &path_stat);
-				if (S_ISREG(path_stat.st_mode)) // Solo archivos normales
-		#endif
-		{
-			fileCount++;
-		}
-	}
-
-	closedir(dir);
-	return fileCount;
-}*/
 int CopyFile(const char *sourcePath, const char *destPath) // Copia un archivo
 {
 	size_t cmd_size = strlen(sourcePath) + strlen(destPath) + 20;
@@ -201,6 +129,12 @@ int LoadRepoData(Rep_ *repo)
     {
         ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
         return 1; 
+    }
+	if(DirExists("./.ugit/staging") == 0 || DirExists("./.ugit/commits") == 0)
+    {
+        ugit_say("Warning: Creating missing .ugit subdirectories\n");
+        CreateDir("./.ugit/staging");
+        CreateDir("./.ugit/commits");
     }
     FILE *repodata = fopen("./.ugit/repo_data.txt", "r");
     if(!repodata)
@@ -229,6 +163,7 @@ int LoadRepoData(Rep_ *repo)
     }
     fscanf(repodata, "num_stage: %d\n", &repo->num_stage);
 	fscanf(repodata, "num_commit: %d\n", &repo->num_commit);
+	fscanf(repodata, "header_commit: %d\n", &repo->header_commit);
     fclose(repodata);
     return 0;
 }
@@ -243,6 +178,7 @@ int Update_RepoData(Rep_ *repo)
     fprintf(txt_file, "name: %s\n", repo->nombre);
 	fprintf(txt_file, "num_stage: %d\n", repo->num_stage);
 	fprintf(txt_file, "num_commit: %d\n", repo->num_commit);
+	fprintf(txt_file, "header_commit: %d\n", repo->header_commit);
 	fclose(txt_file);
     return 0;
 }
@@ -256,16 +192,21 @@ void get_user(char *buffer, size_t size)
 }
 int LoadCommitsData(Rep_ *repo)
 {
-	/*PROBLEMA:
-	Cambiar el nombre a las carpetas Commits
-	Seria mas eficiente llamar a las carpetas con el nombre "commit_1, commit_2"
-	asi sabremos el nombre del directorio y podremos abrirlo para leer la informacion
-	*/ //Solucionado(?
 	if(DirExists("./.ugit") == 0)
     {
         ugit_err("No .ugit repository found\nTry: 'init <your_repo_name>' or 'init'\n");
         return 1; 
     }
+	if(DirExists("./.ugit/commits") == 0)
+	{
+		ugit_err("No commits directory found\n");
+		return 1;
+	}
+	if(repo->num_commit == 0)
+	{
+		ugit_err("Failed to load commits data. No commits to load\n");
+		return 1;
+	}
 	repo->commits = malloc(sizeof(Commit_) * (repo->num_commit + 1));
 	for(int i = 0; i < repo->num_commit; i++)
 	{
@@ -316,38 +257,14 @@ int LoadCommitsData(Rep_ *repo)
 			return 1;
 		}
 		fclose(CommitData);
-		/*
-		DIR *dir = opendir(buffer);
-        struct dirent *entry;
-        if (dir)
-        {
-            //Recorre hasta el ultimo archivo en '.'
-            while ((entry = readdir(dir)) != NULL)
-			{
-				FILE *CommitData = fopen("commit_data.txt", "r");
-				fscanf(CommitData, "id: %40s\n", repo->commits[i].id);
-				fscanf(CommitData, "author: %s\n", repo->commits[i].autor);
-				fscanf(CommitData, "date: %s\n", repo->commits[i].fecha);
-				fscanf(CommitData, "message: %s\n", repo->commits[i].msg);
-			}
-		}*/
 	}
 	return 0;
 }
-
-//Ejemplo
-/*
-Commits
-|________"Commit 1: Wea reculia"
-|		  |______commit_data.txt
-|		  |______file1.txt
-|		  |______file2.txt
-|
-|________"Commit 2: Wea reculia recontra culia 2"
-		  |______commit_data.txt
-		  |______file1.txt
-		  |______file2.txt
-		  |______file3.txt
-
-
-*/
+void init_repo(Rep_ *repo)
+{
+	repo->nombre = NULL;
+	repo->num_stage = 0;
+	repo->commits = NULL;
+	repo->num_commit = 0;
+	repo->header_commit = 0;
+}

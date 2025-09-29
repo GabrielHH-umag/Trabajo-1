@@ -25,5 +25,6 @@ typedef struct
   int num_stage;
   Commit_ *commits;
   int num_commit;
+  int header_commit;
 } Rep_;
 #endif

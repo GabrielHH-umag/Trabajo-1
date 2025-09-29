@@ -5,6 +5,7 @@
         "functions.h": "c",
         "estructuras.h": "c",
         "global.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "stdlib.h": "c"
     }
 }
